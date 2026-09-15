@@ -1,0 +1,180 @@
+:root {
+  --bg: #F6F1E4;
+  --surface: #FFFFFF;
+  --surface-2: #FBF8EF;
+  --ink: #20281F;
+  --ink-soft: #4A4536;
+  --primary: #2F5233;
+  --primary-soft: #E4ECDE;
+  --accent: #A9782F;
+  --accent-soft: #F1E4C9;
+  --muted: #8A8168;
+  --border: #DED2AE;
+  --danger: #A5432F;
+  --shadow: 0 1px 2px rgba(32,40,31,0.06), 0 8px 24px rgba(32,40,31,0.06);
+  --radius: 14px;
+  --font-ui: 'IBM Plex Sans Arabic', 'Segoe UI', sans-serif;
+  --font-display: 'Fraunces', 'IBM Plex Sans Arabic', serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14181A;
+    --surface: #1D2422;
+    --surface-2: #232B27;
+    --ink: #EAE6D6;
+    --ink-soft: #C3BCA4;
+    --primary: #86B58C;
+    --primary-soft: #263229;
+    --accent: #D8A85A;
+    --accent-soft: #33291A;
+    --muted: #938970;
+    --border: #33392F;
+    --danger: #D98C78;
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { padding: 0; margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  line-height: 1.6;
+}
+[dir="ltr"] { text-align: left; }
+[dir="rtl"] { text-align: right; }
+
+.wrap { max-width: 760px; margin: 0 auto; padding: 24px 18px 80px; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+
+button {
+  font-family: var(--font-ui);
+  cursor: pointer;
+}
+.btn-primary {
+  background: var(--primary);
+  color: var(--surface);
+  border: none;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 13px 22px;
+  border-radius: 10px;
+}
+.btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--ink-soft);
+  font-size: 13px;
+  padding: 9px 16px;
+  border-radius: 9px;
+}
+.btn-row { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+
+.title-display {
+  font-family: var(--font-display);
+  font-weight: 500;
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 20px;
+  overflow-x: auto;
+}
+.tabs button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 13.5px;
+  font-weight: 500;
+  padding: 9px 12px;
+  border-radius: 9px;
+}
+.tabs button.active {
+  background: var(--surface);
+  color: var(--primary);
+  box-shadow: var(--shadow);
+}
+
+.badge {
+  display: inline-block;
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.badge.primary { background: var(--primary-soft); color: var(--primary); }
+
+.field-input {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 14px;
+  padding: 10px 12px;
+  border-radius: 9px;
+}
+
+.quiz-q { border-top: 1px solid var(--border); padding: 16px 0; }
+.quiz-q:first-of-type { border-top: none; }
+.quiz-opt {
+  display: block;
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--ink);
+  font-size: 14px;
+  padding: 10px 14px;
+  border-radius: 9px;
+  margin-bottom: 8px;
+  text-align: inherit;
+}
+.quiz-opt.selected { border-color: var(--primary); background: var(--primary-soft); }
+.quiz-opt.correct { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
+.quiz-opt.wrong { border-color: var(--danger); background: #F5DCD6; color: var(--danger); }
+
+.loading { text-align: center; padding: 40px 10px; color: var(--muted); }
+.spinner {
+  width: 28px; height: 28px; margin: 0 auto 12px;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.chat-area {
+  max-height: 420px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 4px 2px 10px;
+}
+.chat-msg { max-width: 82%; padding: 10px 14px; border-radius: 14px; font-size: 14.5px; }
+.chat-msg.assistant { align-self: flex-start; background: var(--surface-2); }
+.chat-msg.user { align-self: flex-end; background: var(--primary); color: var(--surface); }
+
+.error-box {
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 13.5px;
+}
