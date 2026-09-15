@@ -79,7 +79,7 @@ export async function POST(req) {
     const messages = Array.isArray(built) ? built : [{ role: 'user', content: built }];
 
     const msg = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-sonnet-5',
       max_tokens: 1500,
       messages,
     });

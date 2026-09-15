@@ -29,7 +29,9 @@ function speak(text) {
   } catch (e) {}
 }
 
-const TABS = ['lesson', 'reading', 'vocab', 'review', 'speaking', 'mirror', 'story', 'stats'];
+const TABS = ['lesson', 'reading', 'history', 'vocab', 'review', 'speaking', 'mirror', 'story', 'stats'];
+const LEVEL_ORDER = ['beginner', 'intermediate', 'advanced'];
+const LEVEL_UP_THRESHOLD = 5;
 
 export default function Dashboard() {
   const router = useRouter();
@@ -82,6 +84,7 @@ export default function Dashboard() {
 
       {tab === 'lesson' && <LessonTab state={state} update={update} t={t} />}
       {tab === 'reading' && <ReadingTab state={state} update={update} t={t} />}
+      {tab === 'history' && <HistoryTab state={state} t={t} />}
       {tab === 'vocab' && <VocabTab state={state} t={t} />}
       {tab === 'review' && <ReviewTab state={state} update={update} t={t} />}
       {tab === 'speaking' && <SpeakingTab state={state} update={update} t={t} />}
@@ -94,7 +97,7 @@ export default function Dashboard() {
 
 function capitalize(s) { return s ? s[0].toUpperCase() + s.slice(1) : 'Beginner'; }
 function tabLabelKey(name) {
-  return { lesson: 'todayLesson', reading: 'reading', vocab: 'vocab', review: 'review', speaking: 'speaking', mirror: 'mirror', story: 'story', stats: 'stats' }[name];
+  return { lesson: 'todayLesson', reading: 'reading', history: 'history', vocab: 'vocab', review: 'review', speaking: 'speaking', mirror: 'mirror', story: 'story', stats: 'stats' }[name];
 }
 
 // ---------------- Lesson Tab ----------------
@@ -102,6 +105,7 @@ function LessonTab({ state, update, t }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const lesson = state.currentLesson;
+  const canLevelUp = state.level !== 'advanced' && (state.lessonsAtLevel || 0) >= LEVEL_UP_THRESHOLD;
 
   async function generate() {
     setLoading(true); setError('');
@@ -112,7 +116,7 @@ function LessonTab({ state, update, t }) {
       update((s) => {
         s.currentLesson = data;
         s.lessonHistory = s.lessonHistory || [];
-        s.lessonHistory.push(data);
+        s.lessonHistory.push({ ...data, date: todayStr() });
         const today = todayStr();
         if (s.lastLessonDate !== today) {
           s.streak = s.lastLessonDate && daysBetween(s.lastLessonDate, today) === 1 ? (s.streak || 0) + 1 : 1;
@@ -135,49 +139,194 @@ function LessonTab({ state, update, t }) {
     });
   }
 
-  if (loading) return <div className="card loading"><div className="spinner"></div>{t.loading}</div>;
-
-  if (!lesson) {
-    return (
+  let body;
+  if (loading) {
+    body = <div className="card loading"><div className="spinner"></div>{t.loading}</div>;
+  } else if (!lesson) {
+    body = (
       <div className="card">
         {error && <div className="error-box" style={{ marginBottom: 12 }}>{error}</div>}
         <button className="btn-primary" onClick={generate}>{t.generate}</button>
       </div>
     );
+  } else {
+    body = (
+      <div className="card">
+        <h3 className="title-display" style={{ marginTop: 0, direction: 'ltr', textAlign: 'left' }}>{lesson.theme}</h3>
+        {lesson.words.map((w, i) => {
+          const saved = (state.wordBank || []).some((x) => x.word.toLowerCase() === w.word.toLowerCase());
+          return (
+            <div key={i} style={{ borderTop: i > 0 ? '1px solid var(--border)' : 'none', padding: '12px 0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
+                <span style={{ direction: 'ltr' }}>
+                  <b className="title-display" style={{ fontSize: 19 }}>{w.word}</b>{' '}
+                  <button onClick={() => speak(w.word)} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer' }}>🔊</button>{' '}
+                  <i style={{ fontSize: 12, color: 'var(--accent)' }}>{w.partOfSpeech}</i>
+                </span>
+                <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{w.meaning}</span>
+              </div>
+              <div style={{ fontSize: 13.5, color: 'var(--ink-soft)', direction: 'ltr', textAlign: 'left', marginTop: 4 }}>{w.definition_en}</div>
+              <div style={{ background: 'var(--surface-2)', borderInlineStart: '3px solid var(--accent)', padding: '8px 12px', marginTop: 6, direction: 'ltr', textAlign: 'left' }}>{w.example_en}</div>
+              <button className="btn-ghost" style={{ marginTop: 8 }} onClick={() => saveWord(w)} disabled={saved}>
+                {saved ? t.saved : t.save}
+              </button>
+            </div>
+          );
+        })}
+        <div className="card" style={{ background: 'var(--surface-2)', marginTop: 14 }}>
+          <b>✍️</b> <span style={{ direction: 'ltr' }}>{lesson.writing_prompt_en}</span>
+        </div>
+        <div className="card" style={{ background: 'var(--surface-2)' }}>
+          <b>🗣️</b> <span style={{ direction: 'ltr' }}>{lesson.speaking_prompt_en}</span>
+        </div>
+        <div className="btn-row">
+          <button className="btn-ghost" onClick={generate}>{t.newOne}</button>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="card">
-      <h3 className="title-display" style={{ marginTop: 0, direction: 'ltr', textAlign: 'left' }}>{lesson.theme}</h3>
-      {lesson.words.map((w, i) => {
-        const saved = (state.wordBank || []).some((x) => x.word.toLowerCase() === w.word.toLowerCase());
-        return (
-          <div key={i} style={{ borderTop: i > 0 ? '1px solid var(--border)' : 'none', padding: '12px 0' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
-              <span style={{ direction: 'ltr' }}>
-                <b className="title-display" style={{ fontSize: 19 }}>{w.word}</b>{' '}
-                <button onClick={() => speak(w.word)} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer' }}>🔊</button>{' '}
-                <i style={{ fontSize: 12, color: 'var(--accent)' }}>{w.partOfSpeech}</i>
-              </span>
-              <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{w.meaning}</span>
-            </div>
-            <div style={{ fontSize: 13.5, color: 'var(--ink-soft)', direction: 'ltr', textAlign: 'left', marginTop: 4 }}>{w.definition_en}</div>
-            <div style={{ background: 'var(--surface-2)', borderInlineStart: '3px solid var(--accent)', padding: '8px 12px', marginTop: 6, direction: 'ltr', textAlign: 'left' }}>{w.example_en}</div>
-            <button className="btn-ghost" style={{ marginTop: 8 }} onClick={() => saveWord(w)} disabled={saved}>
-              {saved ? t.saved : t.save}
-            </button>
+    <div>
+      {canLevelUp && <LevelUpTest state={state} update={update} t={t} />}
+      {body}
+    </div>
+  );
+}
+
+// ---------------- Level-up Test ----------------
+function LevelUpTest({ state, update, t }) {
+  const [stage, setStage] = useState('idle'); // idle | loading | quiz | done
+  const [quiz, setQuiz] = useState(null);
+  const [answers, setAnswers] = useState({});
+  const [result, setResult] = useState(null); // 'passed' | 'failed'
+  const [error, setError] = useState('');
+
+  async function start() {
+    setStage('loading'); setError('');
+    try {
+      const raw = await callAI('level_up_test', { lang: state.lang, level: state.level });
+      const data = parseJSON(raw);
+      setQuiz(data.questions);
+      setAnswers({});
+      setStage('quiz');
+    } catch (e) {
+      setError(t.error);
+      setStage('idle');
+    }
+  }
+
+  function submit() {
+    let correct = 0;
+    quiz.forEach((q, qi) => { if (answers[qi] === q.correctIndex) correct++; });
+    const passed = correct / quiz.length >= 0.7;
+    update((s) => {
+      s.lessonsAtLevel = 0;
+      if (passed) {
+        const idx = LEVEL_ORDER.indexOf(s.level);
+        if (idx >= 0 && idx < LEVEL_ORDER.length - 1) s.level = LEVEL_ORDER[idx + 1];
+      }
+    });
+    setResult(passed ? 'passed' : 'failed');
+    setStage('done');
+  }
+
+  if (stage === 'loading') {
+    return <div className="card loading"><div className="spinner"></div>{t.loading}</div>;
+  }
+
+  if (stage === 'quiz' && quiz) {
+    return (
+      <div className="card">
+        <b className="title-display" style={{ display: 'block', marginBottom: 10 }}>{t.levelUpTest}</b>
+        {quiz.map((q, qi) => (
+          <div className="quiz-q" key={qi}>
+            <p style={{ fontSize: 15, direction: 'ltr', textAlign: 'left' }}>{qi + 1}. {q.question}</p>
+            {q.options.map((opt, oi) => (
+              <button
+                key={oi}
+                className={`quiz-opt ${answers[qi] === oi ? 'selected' : ''}`}
+                style={{ direction: 'ltr', textAlign: 'left' }}
+                onClick={() => setAnswers({ ...answers, [qi]: oi })}
+              >{opt}</button>
+            ))}
           </div>
-        );
-      })}
-      <div className="card" style={{ background: 'var(--surface-2)', marginTop: 14 }}>
-        <b>✍️</b> <span style={{ direction: 'ltr' }}>{lesson.writing_prompt_en}</span>
+        ))}
+        <button className="btn-primary" onClick={submit} disabled={Object.keys(answers).length < quiz.length}>{t.submit}</button>
       </div>
-      <div className="card" style={{ background: 'var(--surface-2)' }}>
-        <b>🗣️</b> <span style={{ direction: 'ltr' }}>{lesson.speaking_prompt_en}</span>
+    );
+  }
+
+  if (stage === 'done') {
+    return (
+      <div className="card" style={{ textAlign: 'center' }}>
+        <p style={{ margin: 0 }}>{result === 'passed' ? t.passed : t.notYetPassed}</p>
       </div>
-      <div className="btn-row">
-        <button className="btn-ghost" onClick={generate}>{t.newOne}</button>
-      </div>
+    );
+  }
+
+  return (
+    <div className="card" style={{ background: 'var(--accent-soft)' }}>
+      <b className="title-display" style={{ display: 'block', marginBottom: 6 }}>{t.levelUpTest}</b>
+      <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', marginTop: 0 }}>{t.levelUpDesc}</p>
+      {error && <div className="error-box" style={{ marginBottom: 12 }}>{error}</div>}
+      <button className="btn-primary" onClick={start}>{t.levelUpTest}</button>
+    </div>
+  );
+}
+
+// ---------------- History Tab ----------------
+function HistoryTab({ state, t }) {
+  const [openKey, setOpenKey] = useState(null);
+  const lessons = (state.lessonHistory || []).slice().reverse();
+  const readings = (state.readingHistory || []).slice().reverse();
+
+  if (!lessons.length && !readings.length) {
+    return <div className="card empty"><p style={{ color: 'var(--muted)', textAlign: 'center' }}>{t.historyEmpty}</p></div>;
+  }
+
+  return (
+    <div>
+      {lessons.length > 0 && (
+        <div className="card">
+          <b className="title-display" style={{ display: 'block', marginBottom: 10 }}>{t.lessonsSection}</b>
+          {lessons.map((l, i) => {
+            const key = 'l' + i;
+            const open = openKey === key;
+            return (
+              <div key={key} style={{ borderTop: i ? '1px solid var(--border)' : 'none', padding: '10px 0' }}>
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, cursor: 'pointer' }}
+                  onClick={() => setOpenKey(open ? null : key)}
+                >
+                  <span className="title-display" style={{ direction: 'ltr', textAlign: 'left' }}>{l.theme}</span>
+                  <span style={{ fontSize: 11.5, color: 'var(--muted)', flexShrink: 0 }}>{l.date || ''}</span>
+                </div>
+                {open && (
+                  <div style={{ marginTop: 8, direction: 'ltr', textAlign: 'left' }}>
+                    {(l.words || []).map((w, wi) => (
+                      <div key={wi} style={{ fontSize: 13.5, padding: '4px 0' }}>
+                        <b>{w.word}</b> — <span style={{ color: 'var(--primary)' }}>{w.meaning}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {readings.length > 0 && (
+        <div className="card">
+          <b className="title-display" style={{ display: 'block', marginBottom: 10 }}>{t.readingSection}</b>
+          {readings.map((r, i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '10px 0', borderTop: i ? '1px solid var(--border)' : 'none' }}>
+              <span className="title-display" style={{ direction: 'ltr', textAlign: 'left' }}>{r.title}</span>
+              <span className="badge primary">{r.correct}/{r.total}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
